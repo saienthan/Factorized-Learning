@@ -62,10 +62,11 @@ object Parse{
   def transform(e: Expr): Expr = e match {
     case Bin(Bin(Bin(a,Bin(b,c, Join),Zip),Bin(Bin(Lam(List("x"),Bin(Bin(Bin(Var("x"),Lit(2),Proj),Lit(1),Proj),Var("x"),Mult)),Lit(2),Proj),Lit(2),Proj),Map),Lam(List("acc","v"),Bin(Var("acc"),Var("v"),Plus)),Reduce) =>
       transform(Bin(Bin(Bin(App(Blnk(), "customZip", List(a, b)), Lam(List("x"), Bin(P_d2("x", 2, 2),Bin(Var("x"), Lit(1), Proj), Mult)), Map), Lam(List("acc", "v"), Bin(Var("acc"), Var("v"), Plus)), Reduce),Bin(Bin(Bin(Bin(App(Blnk(), "customZip", List(Bin(b, Lam(List("x"), Bin(Var("x"), Lit(1), Proj)), Map),a)), Lam(List("acc", "v"), Bin(Var("acc"), Var("v"), Plus)), ReduceByKey), c, Join), Lam(List("x"), Bin(P_d2("x", 2, 2),P_d2("x", 2, 1), Mult)), Map), Lam(List("acc", "v"), Bin(Var("acc"), Var("v"), Plus)), Reduce) , Concat))
-    case Bin(Bin(App(Blnk(), "customZip", List(a,Bin(b,c, Join))),Bin(Bin(Lam(List("x"),Bin(Bin(Bin(Var("x"),Lit(2),Proj),Lit(1),Proj),Var("x"),Mult)),Lit(2),Proj),Lit(2),Proj),Map),Lam(List("acc","v"),Bin(Var("acc"),Var("v"),Plus)),Reduce) =>
+    case Bin(Bin(App(Blnk(), "customZip", List(a,Bin(b,c, Join))),Lam(List("x"), Bin(Bin(Var("x"),Lit(1),Proj),Bin(Var("x"),Lit(2),Proj),Mult)),Map),Lam(List("acc","v"),Bin(Var("acc"),Var("v"),Plus)),Reduce) =>
+    //case Bin(Bin(App(Blnk(), "customZip", List(a,Bin(b,c, Join))),Bin(Bin(Lam(List("x"),Bin(Bin(Bin(Var("x"),Lit(2),Proj),Lit(1),Proj),Var("x"),Mult)),Lit(2),Proj),Lit(2),Proj),Map),Lam(List("acc","v"),Bin(Var("acc"),Var("v"),Plus)),Reduce) =>
       transform(Bin(Bin(Bin(App(Blnk(), "customZip", List(a, b)), Lam(List("x"), Bin(P_d2("x", 2, 2),Bin(Var("x"), Lit(1), Proj), Mult)), Map), Lam(List("acc", "v"), Bin(Var("acc"), Var("v"), Plus)), Reduce),Bin(Bin(Bin(Bin(App(Blnk(), "customZip", List(Bin(b, Lam(List("x"), Bin(Var("x"), Lit(1), Proj)), Map),a)), Lam(List("acc", "v"), Bin(Var("acc"), Var("v"), Plus)), ReduceByKey), c, Join), Lam(List("x"), Bin(P_d2("x", 2, 2),P_d2("x", 2, 1), Mult)), Map), Lam(List("acc", "v"), Bin(Var("acc"), Var("v"), Plus)), Reduce) , Concat))
 
-    case Bin(Bin(a, b, Join), Lam(List("x"), Bin(Bin(Var("x"), Lit(2), Proj), c, Dot)), Map) => transform(Bin(Bin(Bin(a, Lam(List("x"), Bin(Var("x"), Trip(c, Lit(0), Var(toStr(a)+"d"), Slice), Dot)),MapValues), Bin(b, Lam(List("x"), Bin(Var("x"), Trip(c, Var(toStr(a)+"d"), Bin(Var(toStr(a)+"d"), Var(toStr(b)+"d"), Plus), Slice), Dot)),MapValues), Join) ,Lam(List("x"), Bin(Bin(Var("x"), Lit(1), Proj), Bin(Var("x"),Lit(2), Proj), Plus)),  MapValues))//LMM match
+    case Bin(Bin(a, b, Join), Lam(List("x"), Bin(Var("x"), c, Dot)), Map) => transform(Bin(Bin(Bin(a, Lam(List("x"), Bin(Var("x"), Trip(c, Lit(0), Var(toStr(a)+"d"), Slice), Dot)),MapValues), Bin(b, Lam(List("x"), Bin(Var("x"), Trip(c, Var(toStr(a)+"d"), Bin(Var(toStr(a)+"d"), Var(toStr(b)+"d"), Plus), Slice), Dot)),MapValues), Join) ,Lam(List("x"), Bin(Bin(Var("x"), Lit(1), Proj), Bin(Var("x"),Lit(2), Proj), Plus)),  MapValues))//LMM match
     //case Bin(Bin(a, b, Join), Lam(List("x"), Bin(Bin(Var("x"), Lit(2), Proj), c, Dot)), Map) => transform(Bin(Bin(Bin(a, Lam(List("x"), Bin(Var("x"), Trip(c, Lit(0), Var(toStr(a)+"d"), Slice), Dot)),MapValues), Bin(b, Lam(List("x"), Bin(Var("x"), Trip(c, Var(toStr(a)+"d"), Bin(Var(toStr(a)+"d"), Var(toStr(b)+"d"), Plus), Slice), Dot)),MapValues), Join) ,Lam(List("x"), Bin(Bin(Var("x"), Lit(1), Proj), Bin(Var("x"),Lit(2), Proj), Plus)),  MapValues))//LMM match
 
     case Bin(e1, e2, o) => Bin(transform(e1), transform(e2), o)
@@ -215,10 +216,9 @@ def parse(input: String):Expr = {
       Lit(num.toInt)
     case varn(name) =>
       Var(name)
-    case proj(varn, lit) =>
-      Bin(parse(varn), parse(lit), Proj)
     case met(e1, fname, e2) =>
       if(strToOp.contains(fname)){
+        //println(e1, e2, strToOp(fname))
           Bin(parse(e1), parse(e2), strToOp(fname))
       }
       else{
@@ -229,6 +229,8 @@ def parse(input: String):Expr = {
       Lam(vars.split(",").map(_.trim).toList, parse(e2))
     case bas(e1, op, e2) =>
       Bin(parse(e1), parse(e2), strToOp(op))
+    case proj(varn, lit) =>
+      Bin(parse(varn), parse(lit), Proj)
     case un(e1) =>
       Un(parse(e1), Exp)
     case (_) =>
@@ -276,7 +278,7 @@ def main(args: Array[String]) {
 
   var startParsing = false
 
-  val filename = "/home/saienthan/Factorized-Learning/data/LogReg.scala"
+  val filename = "/home/saienthan/Factorized-Learning/data/temp.scala"
   val matchinp = """^(//){0,1}(.*)""".r
     var Exprs = new ListBuffer[Expr]()
   try {
@@ -303,7 +305,7 @@ def main(args: Array[String]) {
           }
         }
         else{
-          //println(line)
+          println(line)
         }
       }
     }
@@ -315,6 +317,8 @@ def main(args: Array[String]) {
   val expr = mergedExpr
   //println(toStr(transform(expr)))
   //val expr = App(Blnk(), "customZip", List(Var("y"), Var("s"))) 
+  //Bin(Var(t3),Bin(Lam(List(a),Bin(Bin(Var(a),Lit(1),Proj),Var(a),Div)),Lit(2),Proj),Map)
+  //println(parse("a._1/a._2"))
   println(toStrExpand(transform(expr), 1))
 }
 }
